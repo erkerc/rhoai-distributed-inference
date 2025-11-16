@@ -1,0 +1,16 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: openshift-ai-inference
+  namespace: openshift-ingress
+
+spec:
+  gatewayClassName: openshift-ai-inference
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: All
+      hostname: '*.aigw.apps.cluster-dxp8p.dxp8p.sandbox1990.opentlc.com'
+      name: http
+      port: 80
+      protocol: HTTP

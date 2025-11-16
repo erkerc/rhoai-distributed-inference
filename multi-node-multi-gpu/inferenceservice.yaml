@@ -1,0 +1,18 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    serving.kserve.io/deploymentMode: RawDeployment
+    serving.kserve.io/autoscalerClass: external
+  name: qwen25-7b-multinode
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: vLLM
+      runtime: vllm-multinode-runtime
+      storageUri: pvc://model-storage/Qwen/Qwen2.5-7B-Instruct
+    workerSpec: {}
+    tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
