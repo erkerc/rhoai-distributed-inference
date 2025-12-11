@@ -8,7 +8,7 @@ metadata:
     security.opendatahub.io/enable-auth: "false"
 spec:
   model:
-    uri: pvc://object-browser-storage/RedHatAI/Qwen3-8B-FP8-dynamic
+    uri: pvc://model-browser-storage/Qwen/Qwen2.5-7B-Instruct
     name: Qwen3-8B-FP8-dynamic
   # Two replicas to demonstrate KV cache routing across instances
   replicas: 2
@@ -42,8 +42,9 @@ spec:
               - --cert-path
               - /var/run/kserve/tls
               - --config-text
-              - |2
-              
+              - --pool-group
+              - inference.networking.x-k8s.io/v1alpha1
+              - |
                 apiVersion: inference.networking.x-k8s.io/v1alpha1
                 kind: EndpointPickerConfig
                 plugins:

@@ -2,17 +2,28 @@ apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
   annotations:
+    serving.kserve.io/autoscalerClass: none
     serving.kserve.io/deploymentMode: RawDeployment
-    serving.kserve.io/autoscalerClass: external
   name: qwen25-7b-multinode
+  namespace: llm-demo
+  finalizers:
+    - inferenceservice.finalizers
+    - odh.inferenceservice.finalizers
 spec:
   predictor:
+    automountServiceAccountToken: false
     model:
       modelFormat:
         name: vLLM
+      name: ''
+      resources: {}
       runtime: vllm-multinode-runtime
-      storageUri: pvc://model-storage/Qwen/Qwen2.5-7B-Instruct
-    workerSpec: {}
+      storageUri: 'pvc://model-browser-storage/Qwen/Qwen2.5-7B-Instruct'
+    nodeSelector:
+      accelerator: nvidia-l40
     tolerations:
       - effect: NoSchedule
         key: nvidia.com/gpu
+    workerSpec:
+      pipelineParallelSize: 2
+      tensorParallelSize: 1
