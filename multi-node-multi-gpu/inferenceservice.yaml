@@ -20,10 +20,12 @@ spec:
       runtime: vllm-multinode-runtime
       storageUri: 'pvc://model-browser-storage/Qwen/Qwen2.5-7B-Instruct'
     nodeSelector:
-      accelerator: nvidia-l40
+      node.kubernetes.io/instance-type: g6.2xlarge
     tolerations:
-      - effect: NoSchedule
-        key: nvidia.com/gpu
+    - key: "nvidia.com/gpu"
+      operator: "Equal"
+      value: "NVIDIA-L40-SHARED"
+      effect: "NoSchedule"
     workerSpec:
       pipelineParallelSize: 2
       tensorParallelSize: 1

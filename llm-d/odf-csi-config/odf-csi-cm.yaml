@@ -1,0 +1,19 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: rook-ceph-operator-config
+  namespace: openshift-storage
+data:  
+  CSI_PLUGIN_TOLERATIONS: |
+    - key: "nvidia.com/gpu"
+      operator: "Equal"
+      value: "NVIDIA-L40-SHARED"
+      effect: "NoSchedule"
+    - key: "nvidia.com/gpu"
+      operator: "Equal"
+      value: "NVIDIA-A10G-SHARED"
+      effect: "NoSchedule"
+    - key: "nvidia.com/gpu"
+      operator: "Equal"
+      value: "NVIDIA-L40S-SHARED"
+      effect: "NoSchedule"
