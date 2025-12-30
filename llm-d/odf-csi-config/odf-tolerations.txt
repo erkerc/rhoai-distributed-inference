@@ -1,0 +1,14 @@
+oc get configmap rook-ceph-operator-config -n openshift-storage -o yaml
+
+oc delete -n openshift-storage pod <name of the rook_ceph_operator pod>
+ 
+ 
+ CSI_PLUGIN_TOLERATIONS: |
+    - key: nodetype
+      operator: Equal
+      value: "infra"
+      effect: NoSchedule
+    - key: node.ocs.openshift.io/storage
+      operator: Equal
+      value: "true"
+      effect: NoSchedule

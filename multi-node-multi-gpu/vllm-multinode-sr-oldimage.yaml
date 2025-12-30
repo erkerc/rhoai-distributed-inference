@@ -1,0 +1,250 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  annotations:
+    opendatahub.io/recommended-accelerators: '["nvidia.com/gpu"]'
+    openshift.io/display-name: vLLM ServingRuntime for KServe
+  name: vllm-multinode-runtime
+  namespace: llm-demo
+  labels:
+    opendatahub.io/dashboard: 'true'
+spec:
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: '8080'
+  containers:
+    - resources:
+        limits:
+          cpu: '6'
+          memory: 32Gi
+          nvidia.com/gpu: '1'
+        requests:
+          cpu: '4'
+          memory: 24Gi
+          nvidia.com/gpu: '1'
+      readinessProbe:
+        exec:
+          command:
+            - bash
+            - '-c'
+            - |
+              set -euo pipefail
+
+              # Check GPU status
+              gpu_status=$(ray status | grep GPU || true)
+              if [[ -z $gpu_status ]]; then
+                echo "Readiness Probe: GPU does not exist"
+                exit 1
+              fi
+
+              used_gpu=$(echo "$gpu_status" | awk '{print $1}' | cut -d'/' -f1)
+              reserved_gpu=$(echo "$gpu_status" | awk '{print $1}' | cut -d'/' -f2)
+              echo "used_gpu: $used_gpu"
+              echo "reserved_gpu: $reserved_gpu"
+
+              if [[ "$used_gpu" != "$reserved_gpu" ]]; then
+                echo "Readiness Probe: Unhealthy - Used: $used_gpu, Reserved: $reserved_gpu"
+                exit 1
+              fi
+
+              echo "Readiness Probe: Healthy"
+        failureThreshold: 3
+        periodSeconds: 60
+        successThreshold: 1
+        timeoutSeconds: 8
+      name: kserve-container
+      command:
+        - bash
+        - '-c'
+      livenessProbe:
+        exec:
+          command:
+            - bash
+            - '-c'
+            - |
+              # Check if the registered ray nodes count is the same as PIPELINE_PARALLEL_SIZE
+              gpu_status=$(ray status | grep GPU)
+              if [[ -z $gpu_status ]]; then
+                echo "$1: GPU does not exist"
+                exit 1
+              fi
+
+              used_gpu=$(echo "$gpu_status" | awk '{print $1}' | cut -d'/' -f1)
+              reserved_gpu=$(echo "$gpu_status" | awk '{print $1}' | cut -d'/' -f2)
+
+              # Determine health status based on GPU usage
+              if [[ "$used_gpu" != "$reserved_gpu" ]]; then
+                echo "$1: Unhealthy - Used: $used_gpu, Reserved: $reserved_gpu"
+                exit 1
+              fi
+        failureThreshold: 3
+        periodSeconds: 60
+        successThreshold: 1
+        timeoutSeconds: 8
+      env:
+        - name: RAY_PORT
+          value: '6379'
+        - name: HOME
+          value: /tmp
+        - name: RAY_ADDRESS
+          value: '127.0.0.1:6379'
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: DISTRIBUTED_EXECUTOR_BACKEND
+          value: ray
+        - name: DISABLE_CUSTOM_ALL_REDUCE
+          value: 'true'
+        - name: MAX_SEQUENCE_LENGTH
+          value: '8192'
+        - name: MAX_NEW_TOKENS
+          value: '2048'
+        - name: MAX_BATCH_SIZE
+          value: '256'
+        - name: MAX_CONCURRENT_REQUESTS
+          value: '320'
+        - name: PORT
+          value: '8080'
+        - name: MAX_LOG_LEN
+          value: '100'
+        - name: HF_HUB_CACHE
+          value: /tmp
+        - name: TRANSFORMERS_CACHE
+          value: /tmp
+        - name: HF_HOME
+          value: /tmp
+      ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+      startupProbe:
+        exec:
+          command:
+            - bash
+            - '-c'
+            - |
+              ray status
+        failureThreshold: 40
+        periodSeconds: 30
+        successThreshold: 1
+        timeoutSeconds: 5
+      volumeMounts:
+        - mountPath: /dev/shm
+          name: shm
+      image: 'quay.io/modh/vllm@sha256:c86ff1e89c86bc9821b75d7f2bbc170b3c13e3ccf538bf543b1110f23e056316'
+      args:
+        - |
+          ray start --head --disable-usage-stats --include-dashboard false 
+          # wait for other node to join
+          until [[ $(ray status | grep -c node_) -eq ${PIPELINE_PARALLEL_SIZE} ]]; do
+            echo "Waiting..."
+            sleep 1
+          done
+          ray status
+
+          export SERVED_MODEL_NAME=${MODEL_NAME}
+          export MODEL_NAME=${MODEL_DIR}
+
+          exec python3 -m vllm_tgis_adapter
+  multiModel: false
+  supportedModelFormats:
+    - autoSelect: true
+      name: vLLM
+      priority: 2
+  volumes:
+    - emptyDir:
+        medium: Memory
+        sizeLimit: 12Gi
+      name: shm
+  workerSpec:
+    containers:
+      - resources:
+          limits:
+            cpu: '6'
+            memory: 32Gi
+            nvidia.com/gpu: '1'
+          requests:
+            cpu: '4'
+            memory: 24Gi
+            nvidia.com/gpu: '1'
+        name: worker-container
+        command:
+          - bash
+          - '-c'
+        livenessProbe:
+          exec:
+            command:
+              - bash
+              - '-c'
+              - |
+                # Check if the registered nodes count matches PIPELINE_PARALLEL_SIZE
+                registered_node_count=$(ray status | grep -c node_)
+                if [[ $registered_node_count -ne "$PIPELINE_PARALLEL_SIZE" ]]; then
+                  echo "Readiness Probe: Unhealthy - Registered nodes count ($registered_node_count) does not match PIPELINE_PARALLEL_SIZE ($PIPELINE_PARALLEL_SIZE)."
+                  exit 1
+                fi
+          failureThreshold: 3
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 60
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        startupProbe:
+          exec:
+            command:
+              - ray
+              - status
+          failureThreshold: 12
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 60
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: shm
+        image: 'quay.io/modh/vllm@sha256:c86ff1e89c86bc9821b75d7f2bbc170b3c13e3ccf538bf543b1110f23e056316'
+        args:
+          - |
+            SECONDS=0
+
+            while true; do              
+              if (( SECONDS <= 120 )); then
+                if ray health-check --address "${HEAD_SVC}.${POD_NAMESPACE}.svc.cluster.local:6379" > /dev/null 2>&1; then
+                  echo "Global Control Service(GCS) is ready."
+                  break
+                fi
+                echo "$SECONDS seconds elapsed: Waiting for Global Control Service(GCS) to be ready."
+              else
+                if ray health-check --address "${HEAD_SVC}.${POD_NAMESPACE}.svc.cluster.local:6379"; then
+                  echo "Global Control Service(GCS) is ready. Any error messages above can be safely ignored."
+                  break
+                fi
+                echo "$SECONDS seconds elapsed: Still waiting for Global Control Service(GCS) to be ready."
+                echo "For troubleshooting, refer to the FAQ at https://docs.ray.io/en/master/cluster/kubernetes/troubleshooting/troubleshooting.html#kuberay-troubleshootin-guides"
+              fi
+              
+              sleep 5
+            done
+
+            echo "Attempting to connect to Ray cluster at $RAY_HEAD_ADDRESS ..."
+            RAY_HEAD_ADDRESS="${HEAD_SVC}.${POD_NAMESPACE}.svc.cluster.local:6379"
+            ray start --address="$RAY_HEAD_ADDRESS" --block
+    pipelineParallelSize: 2
+    tensorParallelSize: 1
+    tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Equal"
+        value: "NVIDIA-L40-SHARED"
+        effect: "NoSchedule"
+    volumes:
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 12Gi
+        name: shm

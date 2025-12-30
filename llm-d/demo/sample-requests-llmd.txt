@@ -1,0 +1,4 @@
+
+
+curl -X 'POST' http://qwen25-7b-multinode-predictor.llm-demo.svc.cluster.local:8080/v1/completions -H "Content-Type: application/json" -d '{ "model": "qwen25-7b-multinode", "prompt": "write a 3 paragraph poem",
+"max_tokens": 100, "temperature": 0}' 

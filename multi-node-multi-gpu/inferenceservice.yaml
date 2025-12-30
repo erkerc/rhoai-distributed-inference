@@ -4,6 +4,9 @@ metadata:
   annotations:
     serving.kserve.io/autoscalerClass: none
     serving.kserve.io/deploymentMode: RawDeployment
+    networking.kserve.io/visibility: exposed
+    opendatahub.io/dashboard: 'true'
+    opendatahub.io/genai-asset: 'true'
   name: qwen25-7b-multinode
   namespace: llm-demo
   finalizers:
@@ -20,12 +23,11 @@ spec:
       runtime: vllm-multinode-runtime
       storageUri: 'pvc://model-browser-storage/Qwen/Qwen2.5-7B-Instruct'
     nodeSelector:
-      node.kubernetes.io/instance-type: g6.2xlarge
+      node.kubernetes.io/instance-type: g6e.2xlarge
     tolerations:
-    - key: "nvidia.com/gpu"
-      operator: "Equal"
-      value: "NVIDIA-L40-SHARED"
-      effect: "NoSchedule"
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        value: "true"
     workerSpec:
       pipelineParallelSize: 2
       tensorParallelSize: 1

@@ -1,0 +1,24 @@
+# Get the vLLM Multi Node inference URL
+LLMD_URL=$(oc get inferenceservice qwen3-8b-llmd -o jsonpath='{.status.url}')
+echo "llm-d URL: ${LLMD_URL}"
+curl -k ${LLMD_URL}/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "RedHatAI/Qwen3-8B-FP8-dynamic",
+    "prompt": "San Francisco is a",
+    "max_tokens": 20
+  }'
+
+# Get the llm-d Multi Node inference URL
+LLMD_URL=$(oc get llminferenceservice qwen3-8b-cachi-llmd -o jsonpath='{.status.url}')
+echo "llm-d URL: ${LLMD_URL}"
+curl -k ${LLMD_URL}/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "RedHatAI/Qwen3-8B-FP8-dynamic",
+    "prompt": "San Francisco is a",
+    "max_tokens": 20
+  }'
+
+# Guide LLM
+  guidellm benchmark run --target=${LLMD_URL}  --profile=sweep --max-seconds=60  --processor='RedHatAI/Qwen3-8B-FP8-dynamic' --data=prompt_tokens=256,output_tokens=128
