@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-proxy-env
+  namespace: openshift-ingress
+data:
+  deployment: |
+    spec:
+      template:
+        spec:
+          containers:
+          - name: istio-proxy
+            env:
+            - name: HTTP_PROXY
+              value: "http://your-proxy.local:8080"
+            - name: HTTPS_PROXY
+              value: "http://your-proxy.local:8080"
+            - name: NO_PROXY
+              value: "localhost,127.0.0.1,.svc,.svc.cluster.local"

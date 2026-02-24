@@ -1,0 +1,245 @@
+apiVersion: serving.kserve.io/v1alpha1
+
+kind: LLMInferenceService
+
+metadata:
+
+  annotations:
+
+    serving.kserve.io/stop: 'false'
+
+    security.opendatahub.io/enable-auth: 'false'
+
+    opendatahub.io/hardware-profile-resource-version: '33736371'
+
+    opendatahub.io/genai-use-case: chat
+
+    openshift.io/description: gemma-3-12b-llmd
+
+    openshift.io/display-name: gemma-3-12b-llmd
+
+    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+
+    opendatahub.io/hardware-profile-name: nvidia-gpu-h100
+
+    opendatahub.io/connections: secret-yqpvrj
+
+    opendatahub.io/model-type: generative
+
+  resourceVersion: '39103883'
+
+  name: gemma-3-12b-llmd
+
+  uid: c51e122c-d613-42bd-99ed-d2fbea5b59e3
+
+  namespace: llm-test
+
+  finalizers:
+
+    - serving.kserve.io/llmisvc-finalizer
+
+  labels:
+
+    opendatahub.io/dashboard: 'true'
+
+    opendatahub.io/genai-asset: 'true'
+
+spec:
+
+  model:
+
+    uri: 'pvc://model-browser-storage/google/gemma-3-12b'
+
+  replicas: 2
+
+  router:
+
+    gateway: {}
+
+    route:
+
+      http:
+
+        spec:
+
+          rules:
+
+            - matches:
+
+                - path:
+
+                    type: PathPrefix
+
+                    value: /
+
+              timeouts:
+
+                backendRequest: 600s
+
+                request: 600s
+
+    scheduler: {}
+
+  template:
+
+    containers:
+
+      - livenessProbe:
+
+          failureThreshold: 10
+
+          httpGet:
+
+            path: /health
+
+            port: 8000
+
+            scheme: HTTPS
+
+          initialDelaySeconds: 300
+
+          periodSeconds: 10
+
+          timeoutSeconds: 10
+
+        name: main
+
+        readinessProbe:
+
+          failureThreshold: 200
+
+          httpGet:
+
+            path: /health
+
+            port: 8000
+
+            scheme: HTTPS
+
+          initialDelaySeconds: 300
+
+          periodSeconds: 10
+
+          timeoutSeconds: 5
+
+        resources:
+
+          limits:
+
+            cpu: '4'
+
+            memory: 8Gi
+
+            nvidia.com/gpu: '1'
+
+          requests:
+
+            cpu: '4'
+
+            memory: 8Gi
+
+            nvidia.com/gpu: '1'
+
+    nodeSelector:
+
+      garanti-gpu: h100
+
+status:
+
+  addresses:
+
+    - url: 'https://infgw.apps.gbocpank3rdaiprod1.fw.garanti.com.tr/'
+
+  annotations:
+
+    serving.kserve.io/config-llm-decode-template: v3-2-0-kserve-config-llm-decode-template
+
+    serving.kserve.io/config-llm-decode-worker-data-parallel: v3-2-0-kserve-config-llm-decode-worker-data-parallel
+
+    serving.kserve.io/config-llm-prefill-template: v3-2-0-kserve-config-llm-prefill-template
+
+    serving.kserve.io/config-llm-prefill-worker-data-parallel: v3-2-0-kserve-config-llm-prefill-worker-data-parallel
+
+    serving.kserve.io/config-llm-router-route: v3-2-0-kserve-config-llm-router-route
+
+    serving.kserve.io/config-llm-scheduler: v3-2-0-kserve-config-llm-scheduler
+
+    serving.kserve.io/config-llm-template: v3-2-0-kserve-config-llm-template
+
+    serving.kserve.io/config-llm-worker-data-parallel: v3-2-0-kserve-config-llm-worker-data-parallel
+
+  conditions:
+
+    - lastTransitionTime: '2026-02-20T09:30:03Z'
+
+      severity: Info
+
+      status: 'True'
+
+      type: HTTPRoutesReady
+
+    - lastTransitionTime: '2026-02-20T09:30:03Z'
+
+      message: The inference pool llm-test/gemma-3-12b-llmd-inference-pool is not ready
+
+      reason: InferencePoolNotReady
+
+      severity: Info
+
+      status: 'False'
+
+      type: InferencePoolReady
+
+    - lastTransitionTime: '2026-02-20T09:36:51Z'
+
+      severity: Info
+
+      status: 'True'
+
+      type: MainWorkloadReady
+
+    - lastTransitionTime: '2026-02-19T13:35:04Z'
+
+      severity: Info
+
+      status: 'True'
+
+      type: PresetsCombined
+
+    - lastTransitionTime: '2026-02-20T09:30:03Z'
+
+      message: The inference pool llm-test/gemma-3-12b-llmd-inference-pool is not ready
+
+      reason: InferencePoolNotReady
+
+      status: 'False'
+
+      type: Ready
+
+    - lastTransitionTime: '2026-02-20T09:30:03Z'
+
+      message: The inference pool llm-test/gemma-3-12b-llmd-inference-pool is not ready
+
+      reason: InferencePoolNotReady
+
+      status: 'False'
+
+      type: RouterReady
+
+    - lastTransitionTime: '2026-02-20T09:30:38Z'
+
+      severity: Info
+
+      status: 'True'
+
+      type: SchedulerWorkloadReady
+
+    - lastTransitionTime: '2026-02-20T09:36:51Z'
+
+      status: 'True'
+
+      type: WorkloadsReady
+
+  observedGeneration: 13
+
+  url: 'https://infgw.apps.gbocpank3rdaiprod1.fw.garanti.com.tr/'

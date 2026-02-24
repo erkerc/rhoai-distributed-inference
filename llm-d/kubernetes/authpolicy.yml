@@ -1,0 +1,91 @@
+apiVersion: kuadrant.io/v1
+
+kind: AuthPolicy
+
+metadata:
+
+  creationTimestamp: "2026-02-20T09:12:56Z"
+
+  generation: 1
+
+  labels:
+
+    app.kubernetes.io/component: llminferenceservice-policies
+
+    app.kubernetes.io/managed-by: odh-model-controller
+
+    app.kubernetes.io/name: gemma-3-12b-llmd
+
+    app.kubernetes.io/part-of: llminferenceservice
+
+  name: gemma-3-12b-llmd-kserve-route-authn
+
+  namespace: llm-test
+
+  ownerReferences:
+
+  - apiVersion: serving.kserve.io/v1alpha1
+
+    blockOwnerDeletion: true
+
+    controller: true
+
+    kind: LLMInferenceService
+
+    name: gemma-3-12b-llmd
+
+    uid: c51e122c-d613-42bd-99ed-d2fbea5b59e3
+
+  resourceVersion: "39097613"
+
+  uid: 092bcc19-2423-446c-b7ff-0f3670922023
+
+spec:
+
+  rules:
+
+    authentication:
+
+      public:
+
+        anonymous: {}
+
+        credentials: {}
+
+        metrics: false
+
+        priority: 0
+
+  targetRef:
+
+    group: gateway.networking.k8s.io
+
+    kind: HTTPRoute
+
+    name: gemma-3-12b-llmd-kserve-route
+
+status:
+
+  conditions:
+
+  - lastTransitionTime: "2026-02-20T09:30:03Z"
+
+    message: AuthPolicy has been accepted
+
+    reason: Accepted
+
+    status: "True"
+
+    type: Accepted
+
+  - lastTransitionTime: "2026-02-20T09:30:03Z"
+
+    message: AuthPolicy has been successfully enforced
+
+    reason: Enforced
+
+    status: "True"
+
+    type: Enforced
+
+  observedGeneration: 1

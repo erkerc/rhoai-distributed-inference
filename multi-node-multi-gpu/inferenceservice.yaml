@@ -8,10 +8,6 @@ metadata:
     opendatahub.io/dashboard: 'true'
     opendatahub.io/genai-asset: 'true'
   name: qwen25-7b-multinode
-  namespace: llm-demo
-  finalizers:
-    - inferenceservice.finalizers
-    - odh.inferenceservice.finalizers
 spec:
   predictor:
     automountServiceAccountToken: false
@@ -19,11 +15,22 @@ spec:
       modelFormat:
         name: vLLM
       name: ''
-      resources: {}
+      args:
+        - '--tool-call-parser=hermes'
+        - '--enable-auto-tool-choice'
+        - '--max-model-len=10000'
       runtime: vllm-multinode-runtime
-      storageUri: 'pvc://model-browser-storage/Qwen/Qwen2.5-7B-Instruct'
+      storageUri: 'pvc://model-storage/Qwen/Qwen2.5-7B-Instruct'
+      resources:
+        limits:
+          cpu: '6'
+          memory: 16Gi
+        requests:
+          cpu: '4'
+          memory: 8Gi
     nodeSelector:
-      node.kubernetes.io/instance-type: g6e.2xlarge
+      node.kubernetes.io/instance-type: g6.2xlarge
+ 
     tolerations:
       - effect: NoSchedule
         key: nvidia.com/gpu
