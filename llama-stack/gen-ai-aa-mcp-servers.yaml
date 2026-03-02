@@ -1,0 +1,18 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: gen-ai-aa-mcp-servers
+  namespace: redhat-ods-applications
+data:
+  GitHub-MCP-Server: |
+    {
+      "url": "https://api.githubcopilot.com/mcp",
+      "description": "The GitHub MCP server enables exploration and interaction with repositories, code, and developer resources on GitHub. It provides programmatic access to repositories, issues, pull requests, and related project data, allowing automation and integration within development workflows. With this service, developers can query repositories, discover project metadata, and streamline code-related tasks through MCP-compatible tools."
+    }
+  OpenShift-MCP-Server: |-
+    {
+      "url": "http://ocp-mcp-server.llm-test.svc.cluster.local:8000/sse",
+      "transport": "sse",
+      "description": "A powerful and flexible Kubernetes Model Context Protocol (MCP) server implementation with support for Kubernetes and OpenShift.",
+      "logo": "https://kubernetes.io/_common-resources/images/flower.svg"
+    }
