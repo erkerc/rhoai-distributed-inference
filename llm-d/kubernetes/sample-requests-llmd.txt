@@ -1,4 +1,8 @@
 
 
-curl -X 'POST' http://qwen25-7b-multinode-predictor.llm-demo.svc.cluster.local:8080/v1/completions -H "Content-Type: application/json" -d '{ "model": "qwen25-7b-multinode", "prompt": "write a 3 paragraph poem",
-"max_tokens": 100, "temperature": 0}' 
+curl -X 'POST' http://infgw.apps.cluster-dkr8l.dkr8l.sandbox3582.opentlc.com/llm-test/qwen3-8b-llmd/v1/completions -H "Content-Type: application/json" -d '{ "model": "qwen3-8b-llmd", "prompt": "Istanbul is a",
+"max_tokens": 30, "temperature": 0}' 
+
+for pod in $(oc get pods -n llm-test -l app.kubernetes.io/component=llminferenceservice-workload -o name); do
+  oc annotate $pod prometheus.io/scrape=true prometheus.io/port=8000 prometheus.io/path=/metrics -n llm-test
+done
