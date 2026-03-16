@@ -24,3 +24,16 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - allowedRoutes:
+        namespaces:
+          from: All
+      hostname: inference-gateway.apps.cluster-dkr8l.dkr8l.sandbox3582.opentlc.com
+      name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        certificateRefs:
+          - group: ''
+            kind: Secret
+            name: gwapi-wildcard
+        mode: Terminate

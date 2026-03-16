@@ -1,0 +1,128 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  annotations:
+    serving.kserve.io/stop: 'false'
+    security.opendatahub.io/enable-auth: 'false'
+    opendatahub.io/genai-use-case: chat
+    openshift.io/display-name: RedHatAI/Qwen3-8B-FP8-dynamic Cache-Aware
+    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"serving.kserve.io/v1alpha1","kind":"LLMInferenceService","metadata":{"annotations":{"opendatahub.io/genai-use-case":"chat","opendatahub.io/hardware-profile-name":"g62xlarge-with-nvidia-gpu-l40","opendatahub.io/hardware-profile-namespace":"redhat-ods-applications","opendatahub.io/hardware-profile-resource-version":"3428520","opendatahub.io/model-type":"generative","openshift.io/display-name":"RedHatAI/Qwen3-8B-FP8-dynamic Cache-Aware","security.opendatahub.io/enable-auth":"false"},"labels":{"opendatahub.io/dashboard":"true","opendatahub.io/genai-asset":"true"},"name":"redhataiqwen3-8b-fp8-dynamic-ca","namespace":"llm-d"},"spec":{"model":{"name":"redhataiqwen3-8b-fp8-dynamic","uri":"oci://registry.redhat.io/rhelai1/modelcar-qwen3-8b-fp8-dynamic:1.5"},"replicas":3,"router":{"gateway":{},"route":{},"scheduler":{"template":{"containers":[{"args":["--pool-group","inference.networking.x-k8s.io","--pool-name","{{ ChildName .ObjectMeta.Name `-inference-pool` }}","--pool-namespace","{{ .ObjectMeta.Namespace }}","--zap-encoder","json","--grpc-port","9002","--grpc-health-port","9003","--secure-serving","--model-server-metrics-scheme","https","--config-text","apiVersion: inference.networking.x-k8s.io/v1alpha1\nkind: EndpointPickerConfig\nplugins:\n- type: single-profile-handler\n- type: queue-scorer\n- type: kv-cache-utilization-scorer\n- type: precise-prefix-cache-scorer\nschedulingProfiles:\n- name: default\n  plugins:\n  - pluginRef: queue-scorer\n    weight: 2\n  - pluginRef: kv-cache-utilization-scorer\n    weight: 2\n  - pluginRef: precise-prefix-cache-scorer\n    weight: 3\n"],"env":[{"name":"TOKENIZER_CACHE_DIR","value":"/tmp/tokenizer-cache"},{"name":"HF_HOME","value":"/tmp/tokenizer-cache"},{"name":"TRANSFORMERS_CACHE","value":"/tmp/tokenizer-cache"},{"name":"XDG_CACHE_HOME","value":"/tmp"},{"name":"LOCAL_TOKENIZER_DIR","value":"/tmp"}],"name":"main","volumeMounts":[{"mountPath":"/tmp/","name":"tokenizer-cache"},{"mountPath":"/cachi2/","name":"cachi-cache"}]}],"volumes":[{"emptyDir":{},"name":"tokenizer-cache"},{"emptyDir":{},"name":"cachi-cache"}]}}},"template":{"containers":[{"env":[{"name":"VLLM_ADDITIONAL_ARGS","value":"--max-model-len=20000 --enable-prefix-caching"}],"name":"main","resources":{"limits":{"cpu":"2","memory":"4Gi","nvidia.com/gpu":"1"},"requests":{"cpu":"2","memory":"4Gi","nvidia.com/gpu":"1"}}}],"nodeSelector":{"node.kubernetes.io/instance-type":"g6.2xlarge"},"tolerations":[{"effect":"NoSchedule","key":"nvida.com/gpu","operator":"Equal","value":"NVIDIA-L40-SHARED"}]}}}
+    opendatahub.io/hardware-profile-name: g62xlarge-with-nvidia-gpu-l40
+    opendatahub.io/model-type: generative
+  name: redhataiqwen3-8b-fp8-dynamic-ca
+  namespace: llm-d
+  finalizers:
+    - serving.kserve.io/llmisvc-finalizer
+  labels:
+    opendatahub.io/dashboard: 'true'
+    opendatahub.io/genai-asset: 'true'
+spec:
+  model:
+    name: redhataiqwen3-8b-fp8-dynamic
+    uri: 'pvc://model-browser-storage/RedHatAI/Qwen3-8B-FP8-dynamic'
+  replicas: 2
+  router:
+    gateway: {}
+    route: {}
+    scheduler:
+      template:
+        containers:
+          - args:
+              - '--pool-group'
+              - inference.networking.x-k8s.io
+              - '--pool-name'
+              - '{{ ChildName .ObjectMeta.Name `-inference-pool` }}'
+              - '--pool-namespace'
+              - '{{ .ObjectMeta.Namespace }}'
+              - '--zap-encoder'
+              - json
+              - '--grpc-port'
+              - '9002'
+              - '--grpc-health-port'
+              - '9003'
+              - '--secure-serving'
+              - '--model-server-metrics-scheme'
+              - https
+              - '--config-text'
+              - |
+                apiVersion: inference.networking.x-k8s.io/v1alpha1
+                kind: EndpointPickerConfig
+                plugins:
+                - type: single-profile-handler
+                - type: queue-scorer
+                - type: kv-cache-utilization-scorer
+                - type: precise-prefix-cache-scorer
+                schedulingProfiles:
+                - name: default
+                  plugins:
+                  - pluginRef: queue-scorer
+                    weight: 2
+                  - pluginRef: kv-cache-utilization-scorer
+                    weight: 2
+                  - pluginRef: precise-prefix-cache-scorer
+                    weight: 3
+            env:
+              - name: TOKENIZER_CACHE_DIR
+                value: /tmp/tokenizer-cache
+              - name: HF_HOME
+                value: /tmp/tokenizer-cache
+              - name: TRANSFORMERS_CACHE
+                value: /tmp/tokenizer-cache
+              - name: XDG_CACHE_HOME
+                value: /tmp
+              - name: LOCAL_TOKENIZER_DIR
+                value: /tmp/tokenizer-cache
+              - name: HF_HUB_OFFLINE
+                value: '1'
+              - name: TRANSFORMERS_OFFLINE
+                value: '1'
+            name: main
+            resources: {}
+            volumeMounts:
+              - mountPath: /mnt/models
+                name: writable-models-dir
+              - mountPath: /tmp/
+                name: tokenizer-cache
+              - mountPath: /tmp/tokenizer-cache/redhataiqwen3-8b-fp8-dynamic
+                name: model-pvc
+                subPath: RedHatAI/Qwen3-8B-FP8-dynamic
+              - mountPath: /cachi2/
+                name: cachi-cache
+        volumes:
+          - name: model-pvc
+            persistentVolumeClaim:
+              claimName: model-browser-storage
+          - emptyDir: {}
+            name: tokenizer-cache
+          - emptyDir: {}
+            name: cachi-cache
+          - emptyDir: {}
+            name: writable-models-dir
+  template:
+    containers:
+      - env:
+          - name: VLLM_ADDITIONAL_ARGS
+            value: '--max-model-len=20000 --enable-prefix-caching'
+          - name: HF_HUB_OFFLINE
+            value: '1'
+          - name: TRANSFORMERS_OFFLINE
+            value: '1'
+        name: main
+        resources:
+          limits:
+            cpu: '2'
+            memory: 4Gi
+            nvidia.com/gpu: '1'
+          requests:
+            cpu: '2'
+            memory: 4Gi
+            nvidia.com/gpu: '1'
+    nodeSelector:
+      node.kubernetes.io/instance-type: g6.2xlarge
+    tolerations:
+      - effect: NoSchedule
+        key: nvida.com/gpu
+        operator: Equal
+        value: NVIDIA-L40-SHARED

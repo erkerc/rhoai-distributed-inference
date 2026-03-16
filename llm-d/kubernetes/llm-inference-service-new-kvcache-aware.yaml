@@ -2,7 +2,6 @@ apiVersion: serving.kserve.io/v1alpha1
 kind: LLMInferenceService
 metadata:
   annotations:
-    opendatahub.io/connections: secret-9k4cep
     opendatahub.io/genai-use-case: chat
     opendatahub.io/hardware-profile-name: g62xlarge-with-nvidia-gpu-l40
     opendatahub.io/hardware-profile-namespace: redhat-ods-applications
@@ -11,7 +10,7 @@ metadata:
     openshift.io/display-name: RedHatAI/Qwen3-8B-FP8-dynamic Cache-Aware
     security.opendatahub.io/enable-auth: 'false'
   name: redhataiqwen3-8b-fp8-dynamic-ca
-  namespace: llmd-demo
+  namespace: llm-d
   labels:
     opendatahub.io/dashboard: 'true'
     opendatahub.io/genai-asset: 'true'
