@@ -9,10 +9,11 @@ oc create namespace maas-api
 # Cluster administrator must deploy maas-api objects
 export CLUSTER_DOMAIN=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
 
+oc apply --server-side=true -f < (oc kustomize deployment/overlays/openshift |     envsubst '$CLUSTER_DOMAIN')
 
-oc apply --server-side=true \
-  -f <(oc kustomize "https://github.com/opendatahub-io/maas-billing.git/deployment/overlays/openshift?ref=main" | \
-       envsubst '$CLUSTER_DOMAIN')
+# oc apply --server-side=true \
+#   -f <(oc kustomize "https://github.com/opendatahub-io/maas-billing.git/deployment/overlays/openshift?ref=main" | \
+#        envsubst '$CLUSTER_DOMAIN')
 
 # Cluster administrator must adjust Audience policy
 
